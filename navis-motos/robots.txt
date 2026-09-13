@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /pages/politica-de-privacidade.html
+Disallow: /pages/termos.html
+
+Sitemap: https://www.navismotos.com.br/sitemap.xml

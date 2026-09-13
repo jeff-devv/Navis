@@ -1,0 +1,118 @@
+GUIA RÁPIDO — COMO EDITAR A LOJA DO SITE (Navi's Motos)
+==========================================================
+Você não precisa saber programar para fazer essas alterações.
+Basta abrir os arquivos com o Bloco de Notas (ou qualquer editor de texto)
+e seguir os passos abaixo.
+
+
+1) COLOCAR O PREÇO DE UM PRODUTO
+---------------------------------
+Abra o arquivo:  js/store.js
+
+Ache o produto pelo nome, por exemplo "Capacete integral". Você vai ver
+um bloco assim:
+
+    {
+      id: "capacete-integral",
+      name: "Capacete integral",
+      desc: "Proteção total para cabeça e queixo...",
+      category: "Capacetes",
+      categorySlug: "capacetes",
+      price: "",                <-- ESTA É A LINHA DO PREÇO
+      images: ["assets/images/produtos/capacete-integral-1.jpg",
+                "assets/images/produtos/capacete-integral-2.jpg"]
+    },
+
+Troque:            price: ""
+Por, por exemplo:  price: "R$ 249,90"
+
+Salve o arquivo. Pronto — o card passa a mostrar o preço em destaque e o
+botão muda automaticamente de "Consultar preço" para "Comprar no WhatsApp".
+
+Se deixar price: "" (vazio), o card mostra "Valor sob consulta" no lugar
+do preço — nunca fica em branco.
+
+
+2) COLOCAR AS FOTOS DE UM PRODUTO (2 por produto)
+---------------------------------------------------
+Veja o arquivo checklist_fotos_loja.csv (abre no Excel ou Google Planilhas)
+— ele lista o nome exato de cada uma das 2 fotos de cada produto.
+
+Passos:
+  a) Tire ou selecione as duas fotos do produto (ângulos diferentes,
+     por exemplo: uma de frente e uma de lado, ou embalagem + produto).
+  b) Renomeie os arquivos exatamente como está no checklist,
+     por exemplo: capacete-integral-1.jpg e capacete-integral-2.jpg
+  c) Coloque os arquivos dentro da pasta:
+     assets/images/produtos/
+
+Não precisa mexer em nenhum código — o site procura as fotos automaticamente
+pelo nome do arquivo. No site, quem visita pode clicar nas duas bolinhas
+embaixo da foto para alternar entre elas. Se uma foto ainda não estiver lá,
+aparece um ícone no lugar (nada quebra).
+
+Dica: fotos na horizontal ou quadradas, com boa iluminação, ficam melhores
+no formato do card (proporção 4:3).
+
+Se quiser usar mais de 2 fotos num produto, é só acrescentar mais um item
+dentro do colchete "images: [...]", seguindo o mesmo padrão de nome
+(ex.: "capacete-integral-3.jpg").
+
+
+3) ADICIONAR UM PRODUTO NOVO
+---------------------------------
+No arquivo js/store.js, copie um bloco inteiro de produto (de "{" até "},")
+e cole antes da linha:
+
+    ];
+
+Depois é só trocar os textos:
+  id            -> um identificador único, sem espaços e sem acento
+                   (ex: "luva-protecao")
+  name          -> nome do produto
+  desc          -> descrição curta
+  category      -> nome da categoria como aparece no site
+                   (Capacetes / Jaquetas / Óleo / Peças)
+  categorySlug  -> a mesma categoria, em minúsculo e sem acento
+                   (capacetes / jaquetas / oleo / pecas)
+  price         -> preço, ou "" se ainda não quiser mostrar
+  images        -> lista com o caminho das fotos, seguindo o padrão
+                   assets/images/produtos/nome-do-arquivo-1.jpg e -2.jpg
+
+Se quiser criar uma CATEGORIA nova (por exemplo "Acessórios"), além de
+criar os produtos, adicione um botão de filtro correspondente no
+index.html, na seção da Loja, copiando uma linha como:
+
+    <button class="gallery-filter" data-store-filter="acessorios">Acessórios</button>
+
+trocando "acessorios" (sem acento) e o texto exibido.
+
+
+4) REMOVER UM PRODUTO
+---------------------------------
+No arquivo js/store.js, apague o bloco inteiro do produto, de "{" até "},".
+
+
+5) SOBRE AS AVALIAÇÕES DO GOOGLE
+---------------------------------
+As 4 avaliações que estão no site hoje são as mesmas que você me passou,
+junto com a nota geral (4,1) e o total (111 avaliações).
+
+Não copiei outras avaliações direto do Google porque:
+ - o texto de cada avaliação pertence a quem escreveu, então não posso
+   reproduzir várias delas automaticamente;
+ - avaliações mudam com o tempo, então copiar manualmente uma vez só
+   deixaria o site desatualizado rápido.
+
+Duas formas de resolver isso, quando fizer sentido para a oficina:
+
+ a) Manual (fácil, sem custo): se você me mandar o texto de novas
+    avaliações (copiando e colando direto do Google Meu Negócio), eu
+    adiciono elas no mesmo formato das atuais.
+
+ b) Automática, via API do Google (veja detalhes no chat) — puxa as
+    avaliações reais e atualizadas direto do Google, sem precisar copiar
+    manualmente. Exige criar uma chave de API gratuita no Google Cloud.
+
+
+Qualquer dúvida nesses passos, é só chamar.
