@@ -119,6 +119,33 @@ const STORE_PRODUTOS = [
     categorySlug: "pecas",
     price: "R$ 210,00",
     images: ["assets/images/produtos/bateria-moto-1.jpg", "assets/images/produtos/bateria-moto-2.jpg"]
+  },
+  {
+    id: "filtro-ar",
+    name: "Filtro de ar",
+    desc: "Filtro de ar para manutenção do sistema de admissão de ar da moto.",
+    category: "Peças",
+    categorySlug: "pecas",
+    price: "R$ 40,00",
+    images: ["assets/images/produtos/filtro-ar-1.jpg"]
+  },
+  {
+    id: "luva-frio",
+    name: "Luva de frio",
+    desc: "Luva de frio para proteção durante o uso em ambientes frios.",
+    category: "Luvas",
+    categorySlug: "luvas",
+    price: "R$ 120,00",
+    images: ["assets/images/produtos/luva-frio-1.jpg"]
+  },
+  {
+    id: "pneus-moto",
+    name: "Pneus para moto",
+    desc: "Pneus de alta performance para motocicletas.",
+    category: "Peças",
+    categorySlug: "pecas",
+    price: "R$ 400,00",
+    images: ["assets/images/produtos/pneus-moto-1.jpg"]
   }
 ];
 
@@ -155,8 +182,6 @@ const STORE_PRODUTOS = [
       ? `<div class="product-card__price">${p.price}</div>`
       : `<div class="product-card__price product-card__price--muted">Valor sob consulta</div>`;
 
-    const ctaLabel = p.price ? 'Comprar no WhatsApp' : 'Consultar preço';
-
     return `
       <article class="product-card" data-store-cat="${p.categorySlug}" data-store-name="${p.name.toLowerCase()}" data-product-id="${p.id}">
         <div class="product-card__media">${mediaHTML}${dotsHTML}</div>
@@ -165,7 +190,7 @@ const STORE_PRODUTOS = [
           <h3 class="product-card__title">${p.name}</h3>
           <p class="product-card__desc">${p.desc}</p>
           ${priceHTML}
-          <button class="btn btn--outline btn--sm btn--block product-card__cta" data-product="${p.name}" data-price="${p.price || ''}">${ctaLabel}</button>
+          <button class="btn btn--outline btn--sm btn--block product-card__cta" data-action="view-product" data-product-id="${p.id}">Ver produto</button>
         </div>
       </article>`;
   }
@@ -217,33 +242,61 @@ const STORE_PRODUTOS = [
       return;
     }
 
-    // clique no botão de comprar/consultar -> abre WhatsApp
-    const btn = e.target.closest('.product-card__cta');
-    if(btn){
-      const nome = btn.getAttribute('data-product');
-      const preco = btn.getAttribute('data-price');
-      let msg = `Olá! Tenho interesse em: ${nome}.`;
-      msg += preco ? ` Vi o valor de ${preco} no site.` : ' Poderiam me informar disponibilidade e preço?';
-      window.open('https://wa.me/' + WHATS_NUMBER + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+    // clique em "Ver produto" -> abre modal com foto + descrição + adicionar ao carrinho
+    const viewBtn = e.target.closest('[data-action="view-product"]');
+    if(viewBtn){
+      const product = productsById[viewBtn.getAttribute('data-product-id')];
+      if(product) openProductModal(product);
     }
   });
 
-  /* ----- filtro por categoria + busca por texto, juntos ----- */
+  /* ----- filtro por categoria + busca por texto, com paginação (12 produtos por página) ----- */
   const filterBtns = document.querySelectorAll('[data-store-filter]');
   const searchInput = document.getElementById('storeSearch');
+  const pagination = document.getElementById('storePagination');
+  const PAGE_SIZE = 12;
   let activeFilter = 'todos';
+  let currentPage = 1;
 
-  function applyStoreFilters(){
+  function getFilteredCards(){
     const term = (searchInput ? searchInput.value : '').trim().toLowerCase();
-    let visibleCount = 0;
-    grid.querySelectorAll('.product-card').forEach(function(card){
+    return Array.from(grid.querySelectorAll('.product-card')).filter(function(card){
       const matchesCat = activeFilter === 'todos' || card.getAttribute('data-store-cat') === activeFilter;
       const matchesSearch = !term || card.getAttribute('data-store-name').indexOf(term) !== -1;
-      const show = matchesCat && matchesSearch;
-      card.style.display = show ? '' : 'none';
-      if(show) visibleCount++;
+      return matchesCat && matchesSearch;
     });
-    if(emptyMsg) emptyMsg.hidden = visibleCount !== 0;
+  }
+
+  function renderPagination(totalPages){
+    if(!pagination) return;
+    if(totalPages <= 1){
+      pagination.innerHTML = '';
+      pagination.hidden = true;
+      return;
+    }
+    pagination.hidden = false;
+    let html = '<button class="store-pagination__arrow" data-page-action="prev"' + (currentPage === 1 ? ' disabled' : '') + ' aria-label="Página anterior">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>';
+    for(let i = 1; i <= totalPages; i++){
+      html += '<button class="store-pagination__num' + (i === currentPage ? ' is-active' : '') + '" data-page="' + i + '"' + (i === currentPage ? ' aria-current="page"' : '') + '>' + i + '</button>';
+    }
+    html += '<button class="store-pagination__arrow" data-page-action="next"' + (currentPage === totalPages ? ' disabled' : '') + ' aria-label="Próxima página">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg></button>';
+    pagination.innerHTML = html;
+  }
+
+  function applyStoreFilters(resetPage){
+    if(resetPage) currentPage = 1;
+    const filtered = getFilteredCards();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if(currentPage > totalPages) currentPage = totalPages;
+
+    grid.querySelectorAll('.product-card').forEach(function(card){ card.style.display = 'none'; });
+    const start = (currentPage - 1) * PAGE_SIZE;
+    filtered.slice(start, start + PAGE_SIZE).forEach(function(card){ card.style.display = ''; });
+
+    if(emptyMsg) emptyMsg.hidden = filtered.length !== 0;
+    renderPagination(totalPages);
   }
 
   filterBtns.forEach(function(btn){
@@ -251,8 +304,296 @@ const STORE_PRODUTOS = [
       filterBtns.forEach(function(b){ b.classList.remove('is-active'); });
       btn.classList.add('is-active');
       activeFilter = btn.getAttribute('data-store-filter');
-      applyStoreFilters();
+      applyStoreFilters(true);
     });
   });
-  if(searchInput) searchInput.addEventListener('input', applyStoreFilters);
+  if(searchInput) searchInput.addEventListener('input', function(){ applyStoreFilters(true); });
+
+  if(pagination){
+    pagination.addEventListener('click', function(e){
+      const btn = e.target.closest('button');
+      if(!btn || btn.disabled) return;
+      const totalPages = Math.max(1, Math.ceil(getFilteredCards().length / PAGE_SIZE));
+      if(btn.getAttribute('data-page-action') === 'prev') currentPage = Math.max(1, currentPage - 1);
+      else if(btn.getAttribute('data-page-action') === 'next') currentPage = Math.min(totalPages, currentPage + 1);
+      else if(btn.getAttribute('data-page')) currentPage = Number(btn.getAttribute('data-page'));
+      applyStoreFilters(false);
+      grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  applyStoreFilters(true);
+
+  /* ==========================================================================
+     Modal "Ver produto" — mostra foto(s) + descrição e permite escolher
+     quantidade antes de adicionar ao carrinho.
+     ========================================================================== */
+  const productModal = document.getElementById('productModal');
+  const productModalOverlay = document.getElementById('productModalOverlay');
+  const productModalClose = document.getElementById('productModalClose');
+  const productModalMedia = document.getElementById('productModalMedia');
+  const productModalDots = document.getElementById('productModalDots');
+  const productModalTag = document.getElementById('productModalTag');
+  const productModalTitle = document.getElementById('productModalTitle');
+  const productModalDesc = document.getElementById('productModalDesc');
+  const productModalPrice = document.getElementById('productModalPrice');
+  const productModalQtyValue = document.getElementById('productModalQtyValue');
+  const productModalQtyMinus = document.getElementById('productModalQtyMinus');
+  const productModalQtyPlus = document.getElementById('productModalQtyPlus');
+  const productModalAdd = document.getElementById('productModalAdd');
+
+  let modalProduct = null;
+  let modalImgIndex = 0;
+  let modalQty = 1;
+
+  function placeholderMediaHTML(categorySlug){
+    return '<div class="product-card__media--placeholder">' + (CATEGORY_ICON[categorySlug] || '') + '<span>Foto em breve</span></div>';
+  }
+
+  function renderModalMedia(){
+    if(!modalProduct || !productModalMedia) return;
+    const imgs = modalProduct.images || [];
+    const src = imgs[modalImgIndex];
+    if(src){
+      productModalMedia.innerHTML = '<img src="' + src + '" alt="' + modalProduct.name + '">';
+      const imgEl = productModalMedia.querySelector('img');
+      if(imgEl){
+        imgEl.addEventListener('error', function(){
+          productModalMedia.innerHTML = placeholderMediaHTML(modalProduct.categorySlug);
+        });
+      }
+    } else {
+      productModalMedia.innerHTML = placeholderMediaHTML(modalProduct.categorySlug);
+    }
+    if(productModalDots){
+      productModalDots.innerHTML = imgs.length > 1
+        ? imgs.map(function(_, i){
+            return '<button class="product-modal__dot' + (i === modalImgIndex ? ' is-active' : '') + '" data-idx="' + i + '" aria-label="Ver foto ' + (i + 1) + ' de ' + modalProduct.name + '"></button>';
+          }).join('')
+        : '';
+    }
+  }
+
+  function openProductModal(product){
+    if(!productModal) return;
+    modalProduct = product;
+    modalImgIndex = 0;
+    modalQty = 1;
+    if(productModalQtyValue) productModalQtyValue.textContent = modalQty;
+    if(productModalTag) productModalTag.textContent = product.category.trim();
+    if(productModalTitle) productModalTitle.textContent = product.name;
+    if(productModalDesc) productModalDesc.textContent = product.desc;
+    if(productModalPrice) productModalPrice.textContent = product.price ? product.price : 'Valor sob consulta';
+    renderModalMedia();
+    productModal.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeProductModal(){
+    if(!productModal) return;
+    productModal.classList.remove('is-open');
+    document.body.style.overflow = '';
+    modalProduct = null;
+  }
+
+  if(productModalClose) productModalClose.addEventListener('click', closeProductModal);
+  if(productModalOverlay) productModalOverlay.addEventListener('click', closeProductModal);
+  if(productModalDots){
+    productModalDots.addEventListener('click', function(e){
+      const dot = e.target.closest('.product-modal__dot');
+      if(!dot) return;
+      modalImgIndex = Number(dot.getAttribute('data-idx'));
+      renderModalMedia();
+    });
+  }
+  if(productModalQtyMinus){
+    productModalQtyMinus.addEventListener('click', function(){
+      modalQty = Math.max(1, modalQty - 1);
+      productModalQtyValue.textContent = modalQty;
+    });
+  }
+  if(productModalQtyPlus){
+    productModalQtyPlus.addEventListener('click', function(){
+      modalQty = Math.min(20, modalQty + 1);
+      productModalQtyValue.textContent = modalQty;
+    });
+  }
+  if(productModalAdd){
+    productModalAdd.addEventListener('click', function(){
+      if(!modalProduct) return;
+      addToCart(modalProduct, modalQty);
+      closeProductModal();
+      openCartDrawer();
+    });
+  }
+
+  /* ==========================================================================
+     Carrinho — soma os produtos escolhidos e monta um único pedido
+     para enviar pelo WhatsApp.
+     ========================================================================== */
+  const CART_KEY = 'navisMotosCart';
+  const cartFab = document.getElementById('cartFab');
+  const cartBadge = document.getElementById('cartBadge');
+  const cartDrawer = document.getElementById('cartDrawer');
+  const cartDrawerOverlay = document.getElementById('cartDrawerOverlay');
+  const cartDrawerClose = document.getElementById('cartDrawerClose');
+  const cartDrawerList = document.getElementById('cartDrawerList');
+  const cartDrawerEmpty = document.getElementById('cartDrawerEmpty');
+  const cartDrawerTotal = document.getElementById('cartDrawerTotal');
+  const cartWhatsBtn = document.getElementById('cartWhatsBtn');
+
+  let cart = [];
+  try {
+    const saved = window.localStorage ? localStorage.getItem(CART_KEY) : null;
+    if(saved) cart = JSON.parse(saved) || [];
+  } catch(e){ cart = []; }
+
+  function saveCart(){
+    try { if(window.localStorage) localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch(e){}
+  }
+
+  function formatPrice(val){
+    return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+  function parsePrice(str){
+    if(!str) return null;
+    const normalized = String(str).replace(/[^0-9.,]/g, '').replace(/\./g, '').replace(',', '.');
+    const val = parseFloat(normalized);
+    return isNaN(val) ? null : val;
+  }
+
+  function addToCart(product, qty){
+    const existing = cart.find(function(i){ return i.id === product.id; });
+    if(existing) existing.qty += qty;
+    else cart.push({ id: product.id, name: product.name, price: product.price || '', qty: qty });
+    saveCart();
+    renderCart();
+  }
+  function removeFromCart(id){
+    cart = cart.filter(function(i){ return i.id !== id; });
+    saveCart();
+    renderCart();
+  }
+  function updateCartQty(id, qty){
+    const item = cart.find(function(i){ return i.id === id; });
+    if(!item) return;
+    if(qty < 1){ removeFromCart(id); return; }
+    item.qty = qty;
+    saveCart();
+    renderCart();
+  }
+  function cartCount(){
+    return cart.reduce(function(sum, i){ return sum + i.qty; }, 0);
+  }
+
+  function renderCart(){
+    const count = cartCount();
+    if(cartBadge){
+      cartBadge.textContent = count;
+      cartBadge.hidden = count === 0;
+    }
+    if(!cartDrawerList) return;
+
+    if(cart.length === 0){
+      cartDrawerList.innerHTML = '';
+      if(cartDrawerEmpty) cartDrawerEmpty.hidden = false;
+      if(cartDrawerTotal) cartDrawerTotal.textContent = formatPrice(0);
+      if(cartWhatsBtn) cartWhatsBtn.disabled = true;
+      return;
+    }
+    if(cartDrawerEmpty) cartDrawerEmpty.hidden = true;
+    if(cartWhatsBtn) cartWhatsBtn.disabled = false;
+
+    let total = 0;
+    let hasConsult = false;
+    cartDrawerList.innerHTML = cart.map(function(item){
+      const unit = parsePrice(item.price);
+      let priceLabel;
+      if(unit !== null){
+        total += unit * item.qty;
+        priceLabel = formatPrice(unit * item.qty);
+      } else {
+        hasConsult = true;
+        priceLabel = 'Sob consulta';
+      }
+      return '<div class="cart-item" data-cart-id="' + item.id + '">' +
+          '<div class="cart-item__info">' +
+            '<span class="cart-item__name">' + item.name + '</span>' +
+            '<span class="cart-item__price">' + priceLabel + '</span>' +
+          '</div>' +
+          '<div class="cart-item__qty">' +
+            '<button class="cart-item__qty-btn" data-cart-action="minus" aria-label="Diminuir quantidade de ' + item.name + '">&minus;</button>' +
+            '<span>' + item.qty + '</span>' +
+            '<button class="cart-item__qty-btn" data-cart-action="plus" aria-label="Aumentar quantidade de ' + item.name + '">+</button>' +
+          '</div>' +
+          '<button class="cart-item__remove" data-cart-action="remove" aria-label="Remover ' + item.name + ' do carrinho">&times;</button>' +
+        '</div>';
+    }).join('');
+
+    if(cartDrawerTotal){
+      cartDrawerTotal.textContent = formatPrice(total) + (hasConsult ? ' + itens sob consulta' : '');
+    }
+  }
+
+  function openCartDrawer(){
+    if(!cartDrawer) return;
+    renderCart();
+    cartDrawer.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeCartDrawer(){
+    if(!cartDrawer) return;
+    cartDrawer.classList.remove('is-open');
+    document.body.style.overflow = '';
+  }
+
+  if(cartFab) cartFab.addEventListener('click', openCartDrawer);
+  if(cartDrawerClose) cartDrawerClose.addEventListener('click', closeCartDrawer);
+  if(cartDrawerOverlay) cartDrawerOverlay.addEventListener('click', closeCartDrawer);
+
+  if(cartDrawerList){
+    cartDrawerList.addEventListener('click', function(e){
+      const itemEl = e.target.closest('.cart-item');
+      const action = e.target.closest('[data-cart-action]');
+      if(!itemEl || !action) return;
+      const id = itemEl.getAttribute('data-cart-id');
+      const item = cart.find(function(i){ return i.id === id; });
+      if(!item) return;
+      if(action.getAttribute('data-cart-action') === 'plus') updateCartQty(id, item.qty + 1);
+      else if(action.getAttribute('data-cart-action') === 'minus') updateCartQty(id, item.qty - 1);
+      else if(action.getAttribute('data-cart-action') === 'remove') removeFromCart(id);
+    });
+  }
+
+  if(cartWhatsBtn){
+    cartWhatsBtn.addEventListener('click', function(){
+      if(cart.length === 0) return;
+      const linhas = ['Olá! Gostaria de fazer o seguinte pedido na Navi\'s Motos:', ''];
+      let total = 0;
+      let hasConsult = false;
+      cart.forEach(function(item){
+        const unit = parsePrice(item.price);
+        let linha = '- ' + item.qty + 'x ' + item.name;
+        if(unit !== null){
+          total += unit * item.qty;
+          linha += ' (' + formatPrice(unit * item.qty) + ')';
+        } else {
+          hasConsult = true;
+          linha += ' (valor sob consulta)';
+        }
+        linhas.push(linha);
+      });
+      linhas.push('');
+      linhas.push('Total: ' + formatPrice(total) + (hasConsult ? ' + itens sob consulta' : ''));
+      const texto = encodeURIComponent(linhas.join('\n'));
+      window.open('https://wa.me/' + WHATS_NUMBER + '?text=' + texto, '_blank', 'noopener');
+    });
+  }
+
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Escape') return;
+    if(productModal && productModal.classList.contains('is-open')) closeProductModal();
+    if(cartDrawer && cartDrawer.classList.contains('is-open')) closeCartDrawer();
+  });
+
+  renderCart();
 })();

@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/responsive.css">
+<link rel="stylesheet" href="css/store-extra.css">
 
 <!-- Dados estruturados Schema.org — LocalBusiness / AutoRepair -->
 <script type="application/ld+json">
@@ -317,6 +318,8 @@
       <div class="store-grid" id="storeGrid"></div>
 
       <p class="store-empty" id="storeEmpty" hidden>Nenhum produto encontrado para essa busca.</p>
+
+      <nav class="store-pagination" id="storePagination" aria-label="Páginas de produtos"></nav>
     </div>
   </section>
 
@@ -381,6 +384,59 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>
     </button>
     <div class="lightbox__count" id="lightboxCount"></div>
+  </div>
+
+  <!-- Modal de produto (foto + descrição + adicionar ao carrinho) -->
+  <div class="product-modal" id="productModal" role="dialog" aria-modal="true" aria-label="Detalhes do produto">
+    <div class="product-modal__overlay" id="productModalOverlay"></div>
+    <div class="product-modal__panel">
+      <button class="product-modal__close" id="productModalClose" aria-label="Fechar">&times;</button>
+      <div class="product-modal__media">
+        <div class="product-modal__media-inner" id="productModalMedia"></div>
+        <div class="product-modal__dots" id="productModalDots"></div>
+      </div>
+      <div class="product-modal__body">
+        <span class="product-modal__tag" id="productModalTag"></span>
+        <h3 class="product-modal__title" id="productModalTitle"></h3>
+        <p class="product-modal__desc" id="productModalDesc"></p>
+        <div class="product-modal__price" id="productModalPrice"></div>
+        <div class="product-modal__qty">
+          <span class="product-modal__qty-label">Quantidade</span>
+          <div class="product-modal__qty-controls">
+            <button class="product-modal__qty-btn" id="productModalQtyMinus" aria-label="Diminuir quantidade">&minus;</button>
+            <span class="product-modal__qty-value" id="productModalQtyValue">1</span>
+            <button class="product-modal__qty-btn" id="productModalQtyPlus" aria-label="Aumentar quantidade">+</button>
+          </div>
+        </div>
+        <button class="btn btn--primary btn--block product-modal__add" id="productModalAdd">Adicionar ao carrinho</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botão flutuante do carrinho -->
+  <button class="cart-fab" id="cartFab" aria-label="Abrir carrinho de compras">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h2l2.6 12.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L21 7H6"/></svg>
+    <span class="cart-fab__badge" id="cartBadge" hidden>0</span>
+  </button>
+
+  <!-- Carrinho -->
+  <div class="cart-drawer" id="cartDrawer" role="dialog" aria-modal="true" aria-label="Carrinho de compras">
+    <div class="cart-drawer__overlay" id="cartDrawerOverlay"></div>
+    <div class="cart-drawer__panel">
+      <div class="cart-drawer__head">
+        <h3>Seu carrinho</h3>
+        <button class="cart-drawer__close" id="cartDrawerClose" aria-label="Fechar carrinho">&times;</button>
+      </div>
+      <div class="cart-drawer__list" id="cartDrawerList"></div>
+      <p class="cart-drawer__empty" id="cartDrawerEmpty">Seu carrinho está vazio.</p>
+      <div class="cart-drawer__foot">
+        <div class="cart-drawer__total">
+          <span>Total</span>
+          <strong id="cartDrawerTotal">R$ 0,00</strong>
+        </div>
+        <button class="btn btn--primary btn--block" id="cartWhatsBtn">Comprar pelo WhatsApp</button>
+      </div>
+    </div>
   </div>
 
   <!-- ===================== AVALIAÇÕES ===================== -->
